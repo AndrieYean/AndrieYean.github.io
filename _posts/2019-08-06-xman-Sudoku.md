@@ -1,0 +1,41 @@
+# Xman2019 很普通的数独
+
+# 题目描述
+首先拿到题目，发现是有着25张图片的压缩包。    
+
+没什么好想的！解压！  
+好！数独！  
+25张图片！别说25张，就是给我1张图片我都能写出来！  
+![origin](..\pics\wp\xman-QR-origin.png)  
+
+好！成功解出数独！  
+
+emmm，然后要干什么？  
+![scratch-head](..\pics\emojis\scratch-head.jpg)  
+
+询问一波大佬先...  
+What?原来是二维码!  
+
+那就用...用什么？找了好久，终于找到了win10的画图3D来把数字块涂黑。  
+![modify](..\pics\wp\xman-QR-modifing.png)
+
+大功告成！  
+
+![all](..\pics\wp\xman-QR-code-all.png)  
+
+再次利用画图把25张图片手动拼接起来。  
+
+![all](..\pics\wp\xman-QR-code.png)  
+
+话说这25张图片的分界线虽然是直的，但是你是不是也是觉得他是歪的！是不是有点像那个视觉欺骗的感觉！  
+![interesting](..\pics\emojis\interesting.jpg)
+
+利用在线二维码扫描工具解析：  
+Vm0xd1NtUXlWa1pPVldoVFlUSlNjRlJVVGtOamJGWnlWMjFHVlUxV1ZqTldNakZIWVcxS1IxTnNhRmhoTVZweVdWUkdXbVZHWkhOWGJGcHBWa1paZWxaclpEUmhNVXBYVW14V2FHVnFRVGs9  
+
+我猜是base64 encode，使用工具decode，果然密文越来越短，最后解出flag:  
+flag{y0ud1any1s1}  
+
+
+其实，这道题不难，毕竟写出来的人那么多，什么时候我也能成为会写脚本的大佬呢？  
+![stiff](..\pics\emojis\stiff.jpeg)
