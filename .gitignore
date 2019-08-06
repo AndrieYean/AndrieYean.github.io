@@ -1,0 +1,12 @@
+<<<<<<< HEAD
+_site
+node_modules
+npm-debug.log
+.DS_Store
+*/.DS_Store
+*/*/.DS_Store
+*.sh
+.vscode
+=======
+_site/
+>>>>>>> 0741d1449c084d1114caf03f668cd0df0bbdfbd8
