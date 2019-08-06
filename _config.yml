@@ -14,8 +14,8 @@ future: true
 # SNS settings
 RSS: false
 #weibo_username:     huxpro
-zhihu_username:     阿鲁威扬
-github_username:    AndrieYean
+zhihu_username:      阿鲁威扬
+github_username:     AndrieYean
 #twitter_username:   huxpro
 #facebook_username:  huxpro
 #linkedin_username:  firstname-lastname-idxxxx
@@ -80,7 +80,7 @@ netease_comment: false
 # Sidebar settings
 sidebar: true                           # whether or not using Sidebar.
 # sidebar-about-description: "For the next quantum leap<br>离开世界之前，一切都是过程"
-sidebar-avatar: /img/avatar-fitzbc-ny.jpg      # use absolute URL, seeing it's used in both `/` and `/about/`
+sidebar-avatar: /img/Yean-protrait.jpg      # use absolute URL, seeing it's used in both `/` and `/about/`
 
 
 
