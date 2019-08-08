@@ -31,7 +31,8 @@ What?原来是二维码!
 ![interesting](..\..\..\..\pics\emojis\interesting.jpg)
 
 利用在线二维码扫描工具解析：  
-Vm0xd1NtUXlWa1pPVldoVFlUSlNjRlJVVGtOamJGWnlWMjFHVlUxV1ZqTldNakZIWVcxS1IxTnNhRmhoTVZweVdWUkdXbVZHWkhOWGJGcHBWa1paZWxaclpEUmhNVXBYVW14V2FHVnFRVGs9  
+Vm0xd1NtUXlWa1pPVldoVFlUSlNjRlJVVGtOamJGWnlWMjFHVlUxV1ZqTldNakZIWVcxS1IxTnNhRmhoTVZw  
+eVdWUkdXbVZHWkhOWGJGcHBWa1paZWxaclpEUmhNVXBYVW14V2FHVnFRVGs9  
 
 我猜是base64 encode，使用工具decode，果然密文越来越短，最后解出flag:  
 flag{y0ud1any1s1}  
