@@ -29,7 +29,6 @@ char destfile[] = "/home/andrie/.gdbinit";
 int i = -1;
 
 void switching(char * name){
-
 	FILE *fp;
 	fp = fopen(destfile,"w");
 	i += 1;
@@ -51,7 +50,6 @@ int main(int argc,char* argv[]){
 			switching("pwndbg");
 		else
 			switching("gef");
-
 		return 0;
 	}
 
@@ -61,7 +59,7 @@ int main(int argc,char* argv[]){
 		puts("Argument Vector Error!");
 		puts("Please try gef or pwndbg.");
 	}
-
+    
 	return 0;
 }
 ~~~
