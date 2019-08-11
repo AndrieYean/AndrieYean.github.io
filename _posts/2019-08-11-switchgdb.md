@@ -22,53 +22,46 @@ peda: source ~/peda/peda.py
 ~~~c
 #include <stdio.h>
 #include <string.h>
+
+char gef[] = "source /home/andrie/.gdbinit-gef.py\0";
+char pwndbg[] = "source /home/andrie/pwndbg/gdbinit.py\0";
+char destfile[] = "/home/andrie/.gdbinit";
+int i = -1;
+
+void switching(char * name){
+
+	FILE *fp;
+	fp = fopen(destfile,"w");
+	i += 1;
+	if(strcmp(name,"gef") == 0)
+		fwrite(gef,sizeof(gef) ,1,fp);
+	if(strcmp(name,"pwndbg") == 0)
+		fwrite(pwndbg,sizeof(pwndbg) ,1,fp);
+	fclose((FILE *)fp);
+}
+
 int main(int argc,char* argv[]){
-	
 	char buf[37];
-	char gef[] = "source /home/andrie/.gdbinit-gef.py\0";
-	char pwndbg[] = "source /home/andrie/pwndbg/gdbinit.py\0";
-	
 	if(argc == 1){
 		FILE *fp;
-		fp = fopen("/home/andrie/.gdbinit", "r");
+		fp = fopen(destfile, "r");
 		fgets(buf,37,(FILE*)fp);
+		fclose((FILE *)fp);
+		if(strcmp(gef,buf) == 0)
+			switching("pwndbg");
+		else
+			switching("gef");
 
-		if(strcmp(gef,buf) != 0){
-			fclose((FILE *)fp);
-			FILE *fp2;
-			fp2 = fopen("/home/andrie/.gdbinit", "w");
-			fwrite(gef,sizeof(gef) ,1,fp2);
-			fclose((FILE *)fp2);
-		}
-
-		else{
-			fclose((FILE *)fp);
-			FILE *fp2;
-			fp2 = fopen("/home/andrie/.gdbinit", "w");
-			fwrite(pwndbg,sizeof(pwndbg) ,1,fp2);
-			fclose((FILE *)fp2);
-		}
 		return 0;
 	}
 
-	if(strcmp(argv[1],"gef") == 0){
-			FILE *fp;
-			fp = fopen("/home/andrie/.gdbinit", "w");
-			fwrite(gef,sizeof(gef) ,1,fp);
-			fclose((FILE *)fp);
-			return 0;
-		}
+	switching(argv[1]);
+	
+	if(i){
+		puts("Argument Vector Error!");
+		puts("Please try gef or pwndbg.");
+	}
 
-	if(strcmp(argv[1],"pwndbg") == 0){
-			FILE *fp;
-			fp = fopen("/home/andrie/.gdbinit", "w");
-			fwrite(pwndbg,sizeof(pwndbg) ,1,fp);
-			fclose((FILE *)fp);
-			return 0;
-		}
-
-	puts("Argument Vector Error!");
-	puts("Please try gef or pwndbg.");
 	return 0;
 }
 ~~~
