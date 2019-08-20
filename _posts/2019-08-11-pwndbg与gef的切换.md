@@ -25,6 +25,7 @@ peda: source ~/peda/peda.py
 
 char gef[] = "source /home/andrie/.gdbinit-gef.py\0";
 char pwndbg[] = "source /home/andrie/pwndbg/gdbinit.py\0";
+char peda[] = "source /home/andrie/peda/peda.py";
 char destfile[] = "/home/andrie/.gdbinit";
 int i = -1;
 
@@ -36,6 +37,8 @@ void switching(char * name){
 		fwrite(gef,sizeof(gef) ,1,fp);
 	if(strcmp(name,"pwndbg") == 0)
 		fwrite(pwndbg,sizeof(pwndbg) ,1,fp);
+	if(strcmp(name,"peda") == 0)
+		fwrite(peda,sizeof(peda) ,1,fp);
 	fclose((FILE *)fp);
 }
 
@@ -57,7 +60,7 @@ int main(int argc,char* argv[]){
 	
 	if(i){
 		puts("Argument Vector Error!");
-		puts("Please try gef or pwndbg.");
+		puts("Please try gef or pwndbg or peda.");
 	}
     
 	return 0;
