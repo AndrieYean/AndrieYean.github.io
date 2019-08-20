@@ -11,7 +11,7 @@ Find the current address  ( address of the next instruction )
 .text:0804889F                 call    printf
 .text:080488A4                 add     esp, 10h
 ```  
-below the call_printf is 0x80488A4  
+After the call_printf is 0x80488A4  
   
 Find the puts_plt address   
 
