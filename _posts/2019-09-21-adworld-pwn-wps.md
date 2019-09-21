@@ -7,13 +7,13 @@
 ## 0x1  pwn1 babystack
 
 ### 题目信息
-![ad-babtstack-checksec](..\..\..\..\pics\wp\ad-babtstack-checksec.png)   
-![ad-babtstack-idamain](..\..\..\..\pics\wp\ad-babtstack-idamain.png)  
+![ad-babtstack-checksec](..\..\..\..\pics\wp\ad-babystack-checksec.png)   
+![ad-babtstack-idamain](..\..\..\..\pics\wp\ad-babystack-idamain.png)  
 
 ### 思路
-> 泄露canary  
-> 泄露libc基址  
-> 利用one_gadget  
+1.泄露canary  
+2.泄露libc基址  
+3.利用one_gadget  
   
 ### exp
 ~~~ python
@@ -83,10 +83,10 @@ canary是以'\x00'结尾的，本意为截断字符串。
 这个题目主要是分析程序的逻辑漏洞  
 发现了UAF漏洞,没有把free过后的指针设置成NULL。  
 UAF的基本思路是：  
-> （可能是由程序自己）申请一块内存 ptr   
-> 使用free(ptr)  
-> 申请与ptr大小相似的内存（为了得到 ptr ）  
-> 修改 ptr 为自己想要的值
+1.可能是由程序自己）申请一块内存 ptr   
+2.使用free(ptr)  
+3.申请与ptr大小相似的内存（为了得到 ptr ）  
+4.修改 ptr 为自己想要的值
   
 ### exp
 ~~~ python  
@@ -122,6 +122,6 @@ r.interactive()
 ~~~
 
 ### 小知识  
-strspn(str1,str2) :  C库函数，检索字符串 str1 中第一个不在字符串 str2 中出现的字符下标。  
-strdup()在内部调用了malloc()为变量分配内存，不需要使用返回的字符串时，需要用free()释放相应的内存空间，否则会造成内存泄漏。  
-这里的set_zone('\';cat flag\'')是“注入”（暂时不太懂，下次来补坑）
+1.strspn(str1,str2) :  C库函数，检索字符串 str1 中第一个不在字符串 str2 中出现的字符下标。  
+2.strdup()在内部调用了malloc()为变量分配内存，不需要使用返回的字符串时，需要用free()释放相应的内存空间，否则会造成内存泄漏。  
+3.这里的set_zone('\';cat flag\'')是“注入”（暂时不太懂，下次来补坑）
