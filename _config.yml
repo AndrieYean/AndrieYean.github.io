@@ -10,6 +10,7 @@ baseurl: ""                             # for example, '/blog' if your blog host
 
 # Publish posts or collection documents with a future date.
 future: true
+# future: true
 
 # SNS settings
 RSS: false
@@ -105,7 +106,7 @@ page-mathjax: false
 friends: [
     {
         title: "FitzBC",
-        href: "FitzBC.github.io"
+        href: "https://FitzBC.github.io/"
     # },{
     }
 ]
